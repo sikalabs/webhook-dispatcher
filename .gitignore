@@ -16,3 +16,9 @@
 *.local.yaml
 *.local.json
 *.local.txt
+
+# Go
+webhook-to-redis
+*.exe
+/dist/**
+cobra-docs
