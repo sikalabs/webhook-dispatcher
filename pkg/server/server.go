@@ -18,6 +18,7 @@ import (
 )
 
 var ctx = context.Background()
+var enableLogging bool
 
 // Config represents the webhook dispatch configuration
 type Config struct {
@@ -35,6 +36,12 @@ type DispatchRule struct {
 
 // Server starts the webhook server
 func Server() {
+	// Check if logging is enabled
+	enableLogging = os.Getenv("LOG") == "1"
+	if enableLogging {
+		log.Printf("Request logging enabled")
+	}
+
 	// Load config
 	configPath := os.Getenv("CONFIG")
 	if configPath == "" {
@@ -110,6 +117,22 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, rdb *redis.Client, co
 		return
 	}
 	defer r.Body.Close()
+
+	// Log incoming request if enabled
+	if enableLogging {
+		log.Printf("=== Incoming Request ===")
+		log.Printf("Method: %s", r.Method)
+		log.Printf("Path: %s", r.URL.Path)
+		log.Printf("Remote: %s", r.RemoteAddr)
+		log.Printf("Headers:")
+		for name, values := range r.Header {
+			for _, value := range values {
+				log.Printf("  %s: %s", name, value)
+			}
+		}
+		log.Printf("Body: %s", string(body))
+		log.Printf("========================")
+	}
 
 	// Parse body as JSON (validate it's valid JSON)
 	var jsonData interface{}
