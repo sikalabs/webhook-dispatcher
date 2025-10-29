@@ -1,0 +1,10 @@
+Meta:
+  SchemaVersion: 1
+Dispatch:
+  - Path: /foo
+    Targets:
+      - https://example.com/foo
+      - https://example.com/bar
+  - Path: /bar
+    Targets:
+      - https://example.com/baz

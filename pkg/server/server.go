@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,12 +14,42 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"gopkg.in/yaml.v3"
 )
 
 var ctx = context.Background()
 
+// Config represents the webhook dispatch configuration
+type Config struct {
+	Meta struct {
+		SchemaVersion int `yaml:"SchemaVersion"`
+	} `yaml:"Meta"`
+	Dispatch []DispatchRule `yaml:"Dispatch"`
+}
+
+// DispatchRule represents a single dispatch rule
+type DispatchRule struct {
+	Path    string   `yaml:"Path"`
+	Targets []string `yaml:"Targets"`
+}
+
 // Server starts the webhook server
 func Server() {
+	// Load config
+	configPath := os.Getenv("CONFIG")
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+
+	config, err := loadConfig(configPath)
+	if err != nil {
+		log.Printf("Warning: Failed to load config from %s: %v", configPath, err)
+		log.Printf("Continuing without dispatch rules")
+		config = &Config{}
+	} else {
+		log.Printf("Loaded config from %s with %d dispatch rules", configPath, len(config.Dispatch))
+	}
+
 	// Get Redis address from environment or use default
 	redisAddr := os.Getenv("REDIS")
 	if redisAddr == "" {
@@ -31,7 +62,7 @@ func Server() {
 	})
 
 	// Test Redis connection
-	_, err := rdb.Ping(ctx).Result()
+	_, err = rdb.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis at %s: %v", redisAddr, err)
 	}
@@ -39,7 +70,7 @@ func Server() {
 
 	// Create HTTP handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		handleWebhook(w, r, rdb)
+		handleWebhook(w, r, rdb, config)
 	})
 
 	// Start server
@@ -54,8 +85,23 @@ func Server() {
 	}
 }
 
+// loadConfig loads and parses the config file
+func loadConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
 // handleWebhook processes incoming webhook requests
-func handleWebhook(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
+func handleWebhook(w http.ResponseWriter, r *http.Request, rdb *redis.Client, config *Config) {
 	// Read request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -90,9 +136,57 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
 
 	log.Printf("Stored webhook: %s (path: %s, size: %d bytes)", key, r.URL.Path, len(body))
 
+	// Forward to targets based on dispatch rules
+	targets := findTargets(r.URL.Path, config)
+	if len(targets) > 0 {
+		forwardToTargets(targets, body, r.Header)
+	}
+
 	// Send success response
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Webhook received and stored: %s\n", key)
+}
+
+// findTargets finds matching targets for the given path
+func findTargets(path string, config *Config) []string {
+	for _, rule := range config.Dispatch {
+		if rule.Path == path {
+			return rule.Targets
+		}
+	}
+	return nil
+}
+
+// forwardToTargets forwards the webhook to all target URLs
+func forwardToTargets(targets []string, body []byte, headers http.Header) {
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	for _, target := range targets {
+		go func(url string) {
+			req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+			if err != nil {
+				log.Printf("Failed to create request for %s: %v", url, err)
+				return
+			}
+
+			// Copy relevant headers
+			req.Header.Set("Content-Type", headers.Get("Content-Type"))
+			if req.Header.Get("Content-Type") == "" {
+				req.Header.Set("Content-Type", "application/json")
+			}
+
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Printf("Failed to forward webhook to %s: %v", url, err)
+				return
+			}
+			defer resp.Body.Close()
+
+			log.Printf("Forwarded webhook to %s (status: %d)", url, resp.StatusCode)
+		}(target)
+	}
 }
 
 // slugify converts a path into a slug suitable for Redis keys
