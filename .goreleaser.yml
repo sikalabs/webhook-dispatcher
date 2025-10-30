@@ -76,6 +76,8 @@ dockers:
       goos: linux
       goarch: amd64
       image_templates:
+        - "ghcr.io/sikalabs/webhook-dispatcher:{{ .Tag }}"
+        - "ghcr.io/sikalabs/webhook-dispatcher:stable"
         - "sikalabs/webhook-dispatcher:{{ .Tag }}"
         - "sikalabs/webhook-dispatcher:stable"
       dockerfile: Dockerfile.goreleaser
@@ -96,6 +98,8 @@ dockers:
     - goos: linux
       goarch: arm64
       image_templates:
+        - "ghcr.io/sikalabs/webhook-dispatcher:{{ .Tag }}-arm64v8"
+        - "ghcr.io/sikalabs/webhook-dispatcher:stable-arm64v8"
         - "sikalabs/webhook-dispatcher:{{ .Tag }}-arm64v8"
         - "sikalabs/webhook-dispatcher:stable-arm64v8"
       dockerfile: Dockerfile.goreleaser.arm64v8
