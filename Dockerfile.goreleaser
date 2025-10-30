@@ -1,4 +1,5 @@
 FROM debian:13-slim
+LABEL org.opencontainers.image.source=https://github.com/sikalabs/webhook-dispatcher
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY webhook-dispatcher /usr/local/bin/
 ENV CONFIG=/config.yaml
