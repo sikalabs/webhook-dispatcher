@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  {{ .Release.Name }}-dispatcher
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-dispatcher
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-dispatcher
+      annotations:
+        checksum/cm: {{ include (print $.Template.BasePath "/dispatcher_cm.yaml") . | sha256sum }}
+    spec:
+      {{- if .Values.config_yaml }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-dispatcher
+      {{- end }}
+      containers:
+        - name: dispatcher
+          image: {{ required ".Values.image is required" .Values.image }}
+          env:
+            - name: REDIS
+              value: {{ .Release.Name }}-redis
+          {{- if .Values.config_yaml }}
+          volumeMounts:
+            - name: config
+              mountPath: /config.yaml
+              subPath: config.yaml
+          {{- end }}
+          ports:
+            - containerPort: 8000
+

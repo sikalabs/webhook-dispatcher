@@ -1,0 +1,9 @@
+{{ if .Values.config_yaml }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  {{ .Release.Name }}-dispatcher
+data:
+  config.yaml: |
+    {{ .Values.config_yaml | toJson }}
+{{ end }}

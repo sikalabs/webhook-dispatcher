@@ -1,0 +1,13 @@
+# Required
+host:
+image:
+
+# Optional
+config_yaml: null
+
+clusterIssuer: letsencrypt
+# ingressExtraAnnotations:
+#   name: value
+#   foo: bar
+ingressExtraAnnotations: {}
+ingressClassName: nginx
