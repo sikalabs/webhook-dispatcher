@@ -1,8 +1,8 @@
 # Required
 host:
-image:
 
 # Optional
+image: ghcr.io/sikalabs/webhook-dispatcher:stable
 config_yaml: null
 
 clusterIssuer: letsencrypt

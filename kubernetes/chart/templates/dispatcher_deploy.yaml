@@ -22,7 +22,7 @@ spec:
       {{- end }}
       containers:
         - name: dispatcher
-          image: {{ required ".Values.image is required" .Values.image }}
+          image: {{ .Values.image }}
           env:
             - name: REDIS
               value: {{ .Release.Name }}-redis
