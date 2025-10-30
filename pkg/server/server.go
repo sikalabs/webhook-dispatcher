@@ -58,10 +58,12 @@ func Server() {
 	}
 
 	// Get Redis address from environment or use default
-	redisAddr := os.Getenv("REDIS")
-	if redisAddr == "" {
-		redisAddr = "127.0.0.1:6379"
+	redisHost := os.Getenv("REDIS")
+	if redisHost == "" {
+		redisHost = "127.0.0.1"
 	}
+
+	redisAddr := fmt.Sprintf("%s:6379", redisHost)
 
 	// Initialize Redis client
 	rdb := redis.NewClient(&redis.Options{
