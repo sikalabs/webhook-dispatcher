@@ -1,2 +1,2 @@
 FROM arm64v8/debian:12-slim
-COPY webhook-to-redis /usr/local/bin/
+COPY webhook-dispatcher /usr/local/bin/

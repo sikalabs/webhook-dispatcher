@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/sikalabs/webhook-to-redis/cmd/root"
-	_ "github.com/sikalabs/webhook-to-redis/cmd/server"
-	_ "github.com/sikalabs/webhook-to-redis/cmd/version"
+	"github.com/sikalabs/webhook-dispatcher/cmd/root"
+	_ "github.com/sikalabs/webhook-dispatcher/cmd/server"
+	_ "github.com/sikalabs/webhook-dispatcher/cmd/version"
 	"github.com/spf13/cobra"
 )
 

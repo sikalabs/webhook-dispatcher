@@ -1,6 +1,6 @@
 version: 2
 
-project_name: webhook-to-redis
+project_name: webhook-dispatcher
 
 before:
   hooks:
@@ -18,7 +18,7 @@ builds:
     ldflags:
       - -s
       - -w
-      - -X github.com/sikalabs/webhook-to-redis/version.Version=v{{.Version}}
+      - -X github.com/sikalabs/webhook-dispatcher/version.Version=v{{.Version}}
     goos:
       - windows
       - linux
@@ -41,7 +41,7 @@ builds:
       - goos: linux
         goarch: arm
         goarm: "6"
-    binary: webhook-to-redis
+    binary: webhook-dispatcher
 
 archives:
   - formats: [ "tar.gz" ]
@@ -56,30 +56,30 @@ checksum:
 
 brews:
   -
-    name: webhook-to-redis
+    name: webhook-dispatcher
     repository:
       owner: sikalabs
       name: homebrew-tap
     skip_upload: auto
-    homepage: https://github.com/sikalabs/webhook-to-redis
-    url_template: "https://github.com/sikalabs/webhook-to-redis/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    homepage: https://github.com/sikalabs/webhook-dispatcher
+    url_template: "https://github.com/sikalabs/webhook-dispatcher/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     directory: Formula
-    caveats: "How to use this binary: https://github.com/sikalabs/webhook-to-redis"
-    description: "webhook-to-redis"
+    caveats: "How to use this binary: https://github.com/sikalabs/webhook-dispatcher"
+    description: "webhook-dispatcher"
     install: |
-      bin.install "webhook-to-redis"
+      bin.install "webhook-dispatcher"
     test: |
-      system "#{bin}/webhook-to-redis version"
+      system "#{bin}/webhook-dispatcher version"
 
 dockers:
     -
       goos: linux
       goarch: amd64
       image_templates:
-        - "sikalabs/webhook-to-redis:{{ .Tag }}"
+        - "sikalabs/webhook-dispatcher:{{ .Tag }}"
       dockerfile: Dockerfile.goreleaser
       ids:
-        - webhook-to-redis
+        - webhook-dispatcher
       build_flag_templates:
         - "--platform=linux/amd64"
         - "--label=org.opencontainers.image.created={{.Date}}"
@@ -90,15 +90,15 @@ dockers:
         - "--label=org.label-schema.version={{.Version}}"
         - "--label=org.label-schema.name={{.ProjectName}}"
         - "--label=com.github.actions.name={{.ProjectName}}"
-        - "--label=repository=https://github.com/sikalabs/webhook-to-redis"
+        - "--label=repository=https://github.com/sikalabs/webhook-dispatcher"
         - "--label=maintainer=SikaLabs Opensource &lt;opensource@sikalabs.com&gt;"
     - goos: linux
       goarch: arm64
       image_templates:
-        - "sikalabs/webhook-to-redis:{{ .Tag }}-arm64v8"
+        - "sikalabs/webhook-dispatcher:{{ .Tag }}-arm64v8"
       dockerfile: Dockerfile.goreleaser.arm64v8
       ids:
-        - webhook-to-redis
+        - webhook-dispatcher
       build_flag_templates:
         - "--platform=linux/arm64"
         - "--label=org.opencontainers.image.created={{.Date}}"
@@ -109,5 +109,5 @@ dockers:
         - "--label=org.label-schema.version={{.Version}}"
         - "--label=org.label-schema.name={{.ProjectName}}"
         - "--label=com.github.actions.name={{.ProjectName}}"
-        - "--label=repository=https://github.com/sikalabs/webhook-to-redis"
+        - "--label=repository=https://github.com/sikalabs/webhook-dispatcher"
         - "--label=maintainer=SikaLabs Opensource &lt;opensource@sikalabs.com&gt;"

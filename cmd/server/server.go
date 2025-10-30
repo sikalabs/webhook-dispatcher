@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/sikalabs/webhook-to-redis/cmd/root"
-	"github.com/sikalabs/webhook-to-redis/pkg/server"
+	"github.com/sikalabs/webhook-dispatcher/cmd/root"
+	"github.com/sikalabs/webhook-dispatcher/pkg/server"
 	"github.com/spf13/cobra"
 )
 

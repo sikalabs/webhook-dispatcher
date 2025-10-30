@@ -1,1 +1,1 @@
-# webhook-to-redis
+# webhook-dispatcher

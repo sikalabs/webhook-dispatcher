@@ -3,8 +3,8 @@ package version
 import (
 	"fmt"
 
-	"github.com/sikalabs/webhook-to-redis/cmd/root"
-	"github.com/sikalabs/webhook-to-redis/version"
+	"github.com/sikalabs/webhook-dispatcher/cmd/root"
+	"github.com/sikalabs/webhook-dispatcher/version"
 	"github.com/spf13/cobra"
 )
 

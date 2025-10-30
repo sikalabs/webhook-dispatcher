@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sikalabs/webhook-to-redis/cmd"
+	"github.com/sikalabs/webhook-dispatcher/cmd"
 )
 
 func main() {

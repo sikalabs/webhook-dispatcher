@@ -19,7 +19,7 @@
 Makefile.local
 
 # Go
-webhook-to-redis
+webhook-dispatcher
 *.exe
 /dist/**
 cobra-docs
