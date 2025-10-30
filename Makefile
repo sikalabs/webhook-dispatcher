@@ -1,1 +1,1 @@
--include Makefile.local
+-include Makefile.local.mk

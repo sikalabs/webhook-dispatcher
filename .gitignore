@@ -16,7 +16,7 @@
 *.local.yaml
 *.local.json
 *.local.txt
-Makefile.local
+Makefile.local.mk
 
 # Go
 webhook-dispatcher
