@@ -7,7 +7,7 @@ RUN CGO_ENABLED=0 go build
 
 FROM debian:13-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=build /usr/local/bin/webhook-dispatcher .
+COPY --from=build /build/webhook-dispatcher /usr/local/bin/webhook-dispatcher
 ENV CONFIG=/config.yaml
 CMD ["/usr/local/bin/webhook-dispatcher", "server"]
 EXPOSE 8000
