@@ -16,6 +16,7 @@
 *.local.yaml
 *.local.json
 *.local.txt
+Makefile.local
 
 # Go
 webhook-to-redis
