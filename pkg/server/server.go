@@ -79,6 +79,11 @@ func Server() {
 
 	// Create HTTP handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Show homepage for GET requests to root path
+		if r.Method == "GET" && r.URL.Path == "/" {
+			handleHomepage(w, r)
+			return
+		}
 		handleWebhook(w, r, rdb, config)
 	})
 
@@ -107,6 +112,64 @@ func loadConfig(path string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// handleHomepage serves the homepage
+func handleHomepage(w http.ResponseWriter, r *http.Request) {
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Dispatcher</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .description {
+            font-size: 1.1em;
+            margin: 20px 0;
+        }
+        .status {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .right {
+            position: fixed;
+            bottom: 0px;
+            right: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Webhook Dispatcher</h1>
+    <div class="description">
+        <p>A simple webhook receiver that stores webhook payloads in Redis and can forward them to configured targets.</p>
+    </div>
+    <div class="status">
+        <strong>Status:</strong> Service is running and ready to receive webhooks
+    </div>
+    <p class="right">
+        <a href="https://github.com/sikalabs/webhook-dispatcher" target="_blank" style="color:black">webhook-dispatcher</a> by <a href="https://sikalabs.com" target="_blank" style="color:black">sikalabs</a>
+    </p>
+</body>
+</html>`
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, html)
 }
 
 // handleWebhook processes incoming webhook requests
