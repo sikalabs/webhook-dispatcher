@@ -26,6 +26,8 @@ spec:
           env:
             - name: REDIS
               value: {{ .Release.Name }}-redis
+            - name: MONGODB_URI
+              value: mongodb://{{ .Release.Name }}-mongodb:27017
           {{- if .Values.config_yaml }}
           volumeMounts:
             - name: config
