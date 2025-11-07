@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/sikalabs/webhook-dispatcher/pkg/storage"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,25 +57,49 @@ func Server() {
 		log.Printf("Loaded config from %s with %d dispatch rules", configPath, len(config.Dispatch))
 	}
 
-	// Get Redis address from environment or use default
+	// Initialize Redis storage (always required)
 	redisHost := os.Getenv("REDIS")
 	if redisHost == "" {
 		redisHost = "127.0.0.1"
 	}
 
-	redisAddr := fmt.Sprintf("%s:6379", redisHost)
-
-	// Initialize Redis client
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisAddr,
-	})
-
-	// Test Redis connection
-	_, err = rdb.Ping(ctx).Result()
+	redisStore, err := storage.NewRedisStorage(redisHost)
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis at %s: %v", redisAddr, err)
+		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
-	log.Printf("Connected to Redis at %s", redisAddr)
+	log.Printf("Connected to Redis at %s:6379", redisHost)
+
+	// Check if MongoDB is also configured
+	mongoURI := os.Getenv("MONGODB_URI")
+	var store storage.Storage
+
+	if mongoURI != "" {
+		// MongoDB is configured, use dual storage (Redis + MongoDB)
+		mongoDatabase := os.Getenv("MONGODB_DATABASE")
+		if mongoDatabase == "" {
+			mongoDatabase = "webhook-dispatcher"
+		}
+		mongoCollection := os.Getenv("MONGODB_COLLECTION")
+		if mongoCollection == "" {
+			mongoCollection = "events"
+		}
+
+		mongoStore, err := storage.NewMongoDBStorage(mongoURI, mongoDatabase, mongoCollection)
+		if err != nil {
+			log.Fatalf("Failed to connect to MongoDB: %v", err)
+		}
+		log.Printf("Connected to MongoDB at %s (database: %s, collection: %s)", mongoURI, mongoDatabase, mongoCollection)
+
+		// Use dual storage
+		store = storage.NewDualStorage(redisStore, mongoStore)
+		log.Printf("Using dual storage: Redis (primary) + MongoDB (secondary)")
+	} else {
+		// Use only Redis
+		store = redisStore
+		log.Printf("Using Redis storage only")
+	}
+
+	defer store.Close()
 
 	// Create HTTP handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +108,7 @@ func Server() {
 			handleHomepage(w, r)
 			return
 		}
-		handleWebhook(w, r, rdb, config)
+		handleWebhook(w, r, store, config)
 	})
 
 	// Start server
@@ -157,7 +181,7 @@ func handleHomepage(w http.ResponseWriter, r *http.Request) {
 <body>
     <h1>Webhook Dispatcher</h1>
     <div class="description">
-        <p>A simple webhook receiver that stores webhook payloads in Redis and can forward them to configured targets.</p>
+        <p>A simple webhook receiver that stores webhook payloads and can forward them to configured targets.</p>
     </div>
     <div class="status">
         <strong>Status:</strong> Service is running and ready to receive webhooks
@@ -173,7 +197,7 @@ func handleHomepage(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleWebhook processes incoming webhook requests
-func handleWebhook(w http.ResponseWriter, r *http.Request, rdb *redis.Client, config *Config) {
+func handleWebhook(w http.ResponseWriter, r *http.Request, store storage.Storage, config *Config) {
 	// Read request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -210,15 +234,15 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, rdb *redis.Client, co
 	// Slugify the path
 	slugifiedPath := slugify(r.URL.Path)
 
-	// Generate Redis key: webhook-<slugified-path>-<unix-timestamp>
+	// Generate key: webhook-<slugified-path>-<unix-timestamp>
 	unixTime := time.Now().Unix()
 	key := fmt.Sprintf("webhook-%s-%d", slugifiedPath, unixTime)
 
-	// Store in Redis
-	err = rdb.Set(ctx, key, body, 0).Err()
+	// Store in storage backend
+	err = store.Store(ctx, key, r.URL.Path, string(body))
 	if err != nil {
 		http.Error(w, "Failed to store webhook", http.StatusInternalServerError)
-		log.Printf("Failed to store in Redis: %v", err)
+		log.Printf("Failed to store webhook: %v", err)
 		return
 	}
 
