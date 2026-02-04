@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -52,6 +53,15 @@ func (m *MongoDBStorage) Store(ctx context.Context, key string, path string, bod
 	}
 
 	return nil
+}
+
+// Count returns the number of events stored in MongoDB
+func (m *MongoDBStorage) Count(ctx context.Context) (int64, error) {
+	count, err := m.collection.CountDocuments(ctx, bson.D{})
+	if err != nil {
+		return 0, fmt.Errorf("failed to count documents: %w", err)
+	}
+	return count, nil
 }
 
 // Close closes the MongoDB connection

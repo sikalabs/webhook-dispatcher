@@ -18,6 +18,9 @@ type Storage interface {
 	// Store saves a webhook event
 	Store(ctx context.Context, key string, path string, body string) error
 
+	// Count returns the number of stored events
+	Count(ctx context.Context) (int64, error)
+
 	// Close closes the storage connection
 	Close() error
 }

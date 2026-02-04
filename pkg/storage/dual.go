@@ -35,6 +35,21 @@ func (d *DualStorage) Store(ctx context.Context, key string, path string, body s
 	return nil
 }
 
+// Count returns the count from Redis (primary storage)
+func (d *DualStorage) Count(ctx context.Context) (int64, error) {
+	return d.redis.Count(ctx)
+}
+
+// RedisCount returns the count from Redis
+func (d *DualStorage) RedisCount(ctx context.Context) (int64, error) {
+	return d.redis.Count(ctx)
+}
+
+// MongoDBCount returns the count from MongoDB
+func (d *DualStorage) MongoDBCount(ctx context.Context) (int64, error) {
+	return d.mongodb.Count(ctx)
+}
+
 // Close closes both storage connections
 func (d *DualStorage) Close() error {
 	// Close both connections, log errors but continue

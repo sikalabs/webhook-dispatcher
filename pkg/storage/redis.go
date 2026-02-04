@@ -31,6 +31,15 @@ func (r *RedisStorage) Store(ctx context.Context, key string, path string, body 
 	return r.client.Set(ctx, key, body, 0).Err()
 }
 
+// Count returns the number of webhook events stored in Redis
+func (r *RedisStorage) Count(ctx context.Context) (int64, error) {
+	keys, err := r.client.Keys(ctx, "webhook-*").Result()
+	if err != nil {
+		return 0, fmt.Errorf("failed to count keys: %w", err)
+	}
+	return int64(len(keys)), nil
+}
+
 // Close closes the Redis connection
 func (r *RedisStorage) Close() error {
 	return r.client.Close()

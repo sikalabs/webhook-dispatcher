@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sikalabs/webhook-dispatcher/pkg/storage"
 	"gopkg.in/yaml.v3"
@@ -20,6 +21,22 @@ import (
 
 var ctx = context.Background()
 var enableLogging bool
+
+var (
+	redisEventsGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "webhook_dispatcher_redis_events_total",
+		Help: "Total number of events stored in Redis",
+	})
+	mongodbEventsGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "webhook_dispatcher_mongodb_events_total",
+		Help: "Total number of events stored in MongoDB",
+	})
+)
+
+func init() {
+	prometheus.MustRegister(redisEventsGauge)
+	prometheus.MustRegister(mongodbEventsGauge)
+}
 
 // Config represents the webhook dispatch configuration
 type Config struct {
@@ -73,6 +90,7 @@ func Server() {
 	// Check if MongoDB is also configured
 	mongoURI := os.Getenv("MONGODB_URI")
 	var store storage.Storage
+	var mongoStore *storage.MongoDBStorage
 
 	if mongoURI != "" {
 		// MongoDB is configured, use dual storage (Redis + MongoDB)
@@ -85,7 +103,8 @@ func Server() {
 			mongoCollection = "events"
 		}
 
-		mongoStore, err := storage.NewMongoDBStorage(mongoURI, mongoDatabase, mongoCollection)
+		var err error
+		mongoStore, err = storage.NewMongoDBStorage(mongoURI, mongoDatabase, mongoCollection)
 		if err != nil {
 			log.Fatalf("Failed to connect to MongoDB: %v", err)
 		}
@@ -101,6 +120,9 @@ func Server() {
 	}
 
 	defer store.Close()
+
+	// Start metrics collection goroutine
+	go updateMetrics(redisStore, mongoStore)
 
 	// Create HTTP handlers
 	http.Handle("/metrics", promhttp.Handler())
@@ -331,4 +353,41 @@ func slugify(path string) string {
 	path = strings.ToLower(path)
 
 	return path
+}
+
+// updateMetrics periodically updates Prometheus metrics
+func updateMetrics(redisStore *storage.RedisStorage, mongoStore *storage.MongoDBStorage) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	// Update immediately on start
+	updateMetricsOnce(redisStore, mongoStore)
+
+	for range ticker.C {
+		updateMetricsOnce(redisStore, mongoStore)
+	}
+}
+
+func updateMetricsOnce(redisStore *storage.RedisStorage, mongoStore *storage.MongoDBStorage) {
+	if redisStore != nil {
+		count, err := redisStore.Count(ctx)
+		if err != nil {
+			log.Printf("Failed to get Redis event count: %v", err)
+		} else {
+			redisEventsGauge.Set(float64(count))
+		}
+	} else {
+		redisEventsGauge.Set(-1)
+	}
+
+	if mongoStore != nil {
+		count, err := mongoStore.Count(ctx)
+		if err != nil {
+			log.Printf("Failed to get MongoDB event count: %v", err)
+		} else {
+			mongodbEventsGauge.Set(float64(count))
+		}
+	} else {
+		mongodbEventsGauge.Set(-1)
+	}
 }
