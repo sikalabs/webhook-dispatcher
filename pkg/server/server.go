@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sikalabs/webhook-dispatcher/pkg/storage"
 	"gopkg.in/yaml.v3"
 )
@@ -101,7 +102,8 @@ func Server() {
 
 	defer store.Close()
 
-	// Create HTTP handler
+	// Create HTTP handlers
+	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Show homepage for GET requests to root path
 		if r.Method == "GET" && r.URL.Path == "/" {
