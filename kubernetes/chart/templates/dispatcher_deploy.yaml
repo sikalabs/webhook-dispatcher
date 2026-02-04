@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name:  {{ .Release.Name }}-dispatcher
 spec:
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: {{ .Release.Name }}-dispatcher
